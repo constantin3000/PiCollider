@@ -194,7 +194,7 @@ int main(){
 
 	int i;
     for(i = 0; i < ADC_NUM_CHANNELS; i++){
-		values[i].type = INT;
+		values[i].type = FLOAT;
 	}
 
 	htmsocket = OpenHTMSocket("192.168.1.35", 57120);
@@ -212,8 +212,8 @@ int main(){
 	for(;;){
 		for(i = 0; i < ADC_NUM_CHANNELS; i++){
 			int val;
-			values[i].datum.i = 4095 - readADC(i);
-			// printf("chan%d %d ", i, val);
+			values[i].datum.f = (4095 - readADC(i))/4095.0;
+			printf("%f ", i, values[i].datum.f);
 		}
 
 		OSC_resetBuffer(buf);
@@ -234,7 +234,7 @@ int main(){
 		}
 
 	    SendBuffer(htmsocket, buf);
-		// printf("\n");
+		printf("\n");
 		delay(5);
 	}
 }
