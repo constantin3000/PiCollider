@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# script based on http://wiki.linuxaudio.org/wiki/raspberrypi
+
 # Stop the ntp service
 sudo service ntp stop
 
@@ -40,13 +42,13 @@ sleep 1
 
 # start jack in dummy mode
 jackd -P80 -m -p 32 -d dummy -p 256 -r48000 &
-sleep 2
+sleep 1
 # start alsa_out with quality 1, dump error messages and standart output (2>&1 > /dev/null)
 alsa_out -q1 -p256 2>&1 > /dev/null &
 sleep 1
 # start scsynth
 scsynth -u 57110 &
-sleep 1
+sleep 2
 # connect SC outs to jack
 jack_connect SuperCollider:out_1 alsa_out:playback_1 &
 jack_connect SuperCollider:out_2 alsa_out:playback_2 &
