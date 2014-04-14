@@ -11,14 +11,18 @@
 
 #include "osc/htmsocket.h"
 #include "osc/OSC-client.h"
+#include "osc/OSC-timetag.h"
 
 #define ADC_SPI_CHANNEL 1
 #define ADC_SPI_SPEED 500000
 #define ADC_NUM_CHANNELS 8
 
 // OSC defines
-#define SC_BUFFER_SIZE 32000
-#define MAX_ARGS 64
+#define SC_BUFFER_SIZE 8000
+#define MAX_ARGS 16
+#define DELAY 10
+
+// #define DEBUG
 
 typedef struct {
     enum {INT, FLOAT, STRING} type;
@@ -185,26 +189,52 @@ void complain(char *s, ...) {
     va_end(ap);
 }
 
-int main(){
+int main(int argc, char *argv[]){
+    char *hostname = "127.0.0.1";
+    int portnumber = 57120;
+    int nr;
 	void *htmsocket;
     OSCbuf buf[1];
     typedArg args[ADC_NUM_CHANNELS];
     typedArg values[ADC_NUM_CHANNELS];
+    int delay_ms = DELAY;
 
+    argc--;
+    argv++;
+
+    if (argc == 0) {
+		complain("usage: %s -h [target_host_name port_number] -d [delay_in_ms]\n",
+		 argv[-1]);
+		// exit(4);
+    }
+
+    if (argc >= 3 && (strncmp(*argv, "-h", 2) == 0)) {
+        hostname = argv[1];
+        argv += 2;
+        argc -= 2;
+        portnumber = atoi(*argv);
+    	argv++;
+    	argc--;    
+    }
+
+    if (argc >= 2 && (strncmp(*argv, "-d", 2) == 0)) {
+		delay_ms = atoi(argv[1]);
+    }
+
+	printf("host %s, port %d, delay %d\n", hostname, portnumber, delay_ms);
 
 	int i;
     for(i = 0; i < ADC_NUM_CHANNELS; i++){
 		values[i].type = FLOAT;
 	}
 
-	htmsocket = OpenHTMSocket("192.168.1.35", 57120);
+	htmsocket = OpenHTMSocket(hostname, portnumber);
     if (!htmsocket) {
         perror("Couldn't open socket: ");
         exit(3);
     }
 
     OSC_initBuffer(buf, SC_BUFFER_SIZE, bufferForOSCbuf);
-
 
 	wiringPiSetupSys();
 	wiringPiSPISetup(ADC_SPI_CHANNEL, ADC_SPI_SPEED);
@@ -213,7 +243,7 @@ int main(){
 		for(i = 0; i < ADC_NUM_CHANNELS; i++){
 			int val;
 			values[i].datum.f = (4095 - readADC(i))/4095.0;
-			printf("%f ", i, values[i].datum.f);
+			// printf("%f ", i, values[i].datum.f);
 		}
 
 		OSC_resetBuffer(buf);
@@ -222,7 +252,7 @@ int main(){
 		    complain("Problem opening bundle: %s\n", OSC_errorMessage);
 		    return;
 		}
-
+	
 		// arg.type = INT;
 		// arg.datum.i = values[2];
 
@@ -234,7 +264,7 @@ int main(){
 		}
 
 	    SendBuffer(htmsocket, buf);
-		printf("\n");
-		delay(5);
+		// printf("\n");
+		delay(delay_ms);
 	}
 }
